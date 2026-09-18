@@ -92,3 +92,9 @@ func (p *Parser) Arg2() (int, error) {
 	}
 	return argTwo, nil
 }
+
+
+func (p *Parser) Cleanup() (error) {
+	err := p.file.Close()
+	return err
+}
