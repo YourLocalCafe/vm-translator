@@ -160,6 +160,11 @@ D=M
 M=D
 `
 
+const endCommands = `@END
+(END)
+0;JMP
+`
+
 
 func NewWriter(filename string) (*Writer, error) {
 	f, err := os.Create(filename)
@@ -407,6 +412,10 @@ func (w *Writer) writeLt() error {
 
 
 func (w *Writer) Close() error {
-	err := w.file.Close()
+	_, err := fmt.Fprint(w.file, endCommands)
+	if err != nil {
+		return err
+	}
+	err = w.file.Close()
 	return err
 }
