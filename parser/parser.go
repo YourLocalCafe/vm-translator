@@ -62,7 +62,7 @@ func (p *Parser) CommandType() (string, error) {
 	case "push":
 		return "C_PUSH", nil
 	default:
-		errorMessage := fmt.Sprintf("Invalid command type with prefix: %s\n", commandPrefix)
+		errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid command type with prefix: %s", commandPrefix)
 		return "", errors.New(errorMessage)
 	}
 }
@@ -79,7 +79,7 @@ func (p *Parser) Arg1() (string, error) {
 	case "C_PUSH", "C_POP":
 		return strings.Fields(p.CurrentInstruction)[1], nil
 	default:
-		errorMessage := fmt.Sprintf("Invalid command type: %s\n", commandType)
+		errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid command type: %s", commandType)
 		return "", errors.New(errorMessage)
 	}
 }
