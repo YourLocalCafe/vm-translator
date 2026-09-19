@@ -17,8 +17,8 @@ func translate(fileName string) error {
 	}
 	defer p.Cleanup()
 
-	fileNameWithoutExtension, _, _ := strings.Cut(fileName, ".")
-	w, err := writer.NewWriter(fileNameWithoutExtension)
+	fileNameWithoutExtension, _ := strings.CutSuffix(fileName, ".vm")
+	w, err := writer.NewWriter(fileNameWithoutExtension + ".asm")
 	if err != nil {
 		return err
 	}
@@ -75,11 +75,12 @@ func translate(fileName string) error {
 func main() {
 	args := os.Args
 	if len(args) != 2 {
-		fmt.Println("Usage: ./vm-translator <filename>.vm")
+		fmt.Println("Usage: ./vm-translator <Filename>.vm")
 		os.Exit(1)
 	}
 	fileName := args[1]
-	if !unicode.IsUpper(rune(fileName[0])) || !strings.HasSuffix(fileName, ".vm") {
+	filePath := strings.Split(fileName, "/")
+	if !unicode.IsUpper(rune(filePath[len(filePath) - 1][0])) || !strings.HasSuffix(fileName, ".vm") {
 		fmt.Println("Invalid filename - should be of the format: Filename.vm")
 		os.Exit(1)
 	}

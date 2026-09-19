@@ -24,7 +24,7 @@ D=M
 @SP
 M=M-1
 A=M
-M=M%sD
+%s
 @SP
 M=M+1
 `
@@ -119,7 +119,7 @@ M=D
 const pushTempCommands = `@5
 D=A
 %s
-A=A+D
+A=D+A
 D=M
 @SP
 A=M
@@ -328,25 +328,53 @@ func (w *Writer) writePushConstant(value int) error {
 
 
 func (w *Writer) writePopSegment(segment string, index int) error {
-	_, err := fmt.Fprintf(w.file, popSegmentCommands, fmt.Sprintf("@%s", segment), fmt.Sprintf("@%d", index))
+	var segmentName string
+	switch segment {
+	case "local":
+		segmentName = "LCL"
+	case "argument":
+		segmentName = "ARG"
+	case "this":
+		segmentName = "THIS"
+	case "that":
+		segmentName = "THAT"
+	default:
+		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid segment type passed: %s", segment)
+		return errors.New(errorMessage)
+	}
+	_, err := fmt.Fprintf(w.file, popSegmentCommands, fmt.Sprintf("@%s", segmentName), fmt.Sprintf("@%d", index))
 	return err
 }
 
 
 func (w *Writer) writePushSegment(segment string, index int) error {
-	_, err := fmt.Fprintf(w.file, pushSegmentCommands, fmt.Sprintf("@%s", segment), fmt.Sprintf("@%d", index))
+	var segmentName string
+	switch segment {
+	case "local":
+		segmentName = "LCL"
+	case "argument":
+		segmentName = "ARG"
+	case "this":
+		segmentName = "THIS"
+	case "that":
+		segmentName = "THAT"
+	default:
+		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid segment type passed: %s", segment)
+		return errors.New(errorMessage)
+	}
+	_, err := fmt.Fprintf(w.file, pushSegmentCommands, fmt.Sprintf("@%s", segmentName), fmt.Sprintf("@%d", index))
 	return err
 }
 
 
 func (w *Writer) writeAdd() error {
-	_, err := fmt.Fprintf(w.file, binaryCommands, "+")
+	_, err := fmt.Fprintf(w.file, binaryCommands, "M=D+M")
 	return err
 }
 
 
 func (w *Writer) writeSub() error {
-	_, err := fmt.Fprintf(w.file, binaryCommands, "-")
+	_, err := fmt.Fprintf(w.file, binaryCommands, "M=M-D")
 	return err
 }
 
@@ -358,13 +386,13 @@ func (w *Writer) writeNeg() error {
 
 
 func (w *Writer) writeAnd() error {
-	_, err := fmt.Fprintf(w.file, binaryCommands, "&")
+	_, err := fmt.Fprintf(w.file, binaryCommands, "M=D&M")
 	return err
 }
 
 
 func (w *Writer) writeOr() error {
-	_, err := fmt.Fprintf(w.file, binaryCommands, "|")
+	_, err := fmt.Fprintf(w.file, binaryCommands, "M=D|M")
 	return err
 }
 
@@ -400,7 +428,7 @@ func (w *Writer) writeGt() error {
 
 
 func (w *Writer) writeLt() error {
-	finalCommand := fmt.Sprintf(compareCommands, fmt.Sprintf("@LT%d\nD;JLT", w.ltCounter), fmt.Sprintf("@SKIP%d", w.skipCounter), fmt.Sprintf("(EQUAL%d)", w.ltCounter), fmt.Sprintf("(SKIP%d)", w.skipCounter))
+	finalCommand := fmt.Sprintf(compareCommands, fmt.Sprintf("@LT%d\nD;JLT", w.ltCounter), fmt.Sprintf("@SKIP%d", w.skipCounter), fmt.Sprintf("(LT%d)", w.ltCounter), fmt.Sprintf("(SKIP%d)", w.skipCounter))
 	_, err := fmt.Fprint(w.file, finalCommand)
 	if err != nil {
 		return err
