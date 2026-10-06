@@ -256,7 +256,8 @@ func (w *Writer) WritePushPop(commandType string, segment string, index int) err
 
 
 func (w *Writer) writePopStatic(index int) error {
-	fileName, _, foundExtension := strings.Cut(w.file.Name(), ".")
+	filePath := strings.Split(w.file.Name(), "/")
+	fileName, _, foundExtension := strings.Cut(filePath[len(filePath) - 1], ".")
 	if !foundExtension {
 		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid filename passed: %s", w.file.Name())
 		return errors.New(errorMessage)
@@ -267,7 +268,8 @@ func (w *Writer) writePopStatic(index int) error {
 
 
 func (w *Writer) writePushStatic(index int) error {
-	fileName, _, foundExtension := strings.Cut(w.file.Name(), ".")
+	filePath := strings.Split(w.file.Name(), "/")
+	fileName, _, foundExtension := strings.Cut(filePath[len(filePath) - 1], ".")
 	if !foundExtension {
 		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid filename passed: %s", w.file.Name())
 		return errors.New(errorMessage)
