@@ -17,7 +17,8 @@ type Writer struct {
 }
 
 
-const binaryCommands = `@SP
+const binaryCommands = `// Binary command
+@SP
 M=M-1
 A=M
 D=M
@@ -29,8 +30,8 @@ A=M
 M=M+1
 `
 
-
-const unaryCommands = `@SP
+const unaryCommands = `// Unary command
+@SP
 M=M-1
 A=M
 M=%sM
@@ -38,7 +39,8 @@ M=%sM
 M=M+1
 `
 
-const compareCommands = `@SP
+const compareCommands = `// Compare command
+@SP
 M=M-1
 A=M
 D=M
@@ -63,7 +65,8 @@ M=M+1
 %s
 `
 
-const pushSegmentCommands = `%s
+const pushSegmentCommands = `// Push segment command
+%s
 D=M
 %s
 A=D+A
@@ -75,7 +78,8 @@ M=D
 M=M+1
 `
 
-const popSegmentCommands = `%s
+const popSegmentCommands = `// Pop segment command
+%s
 D=M
 %s
 D=D+A
@@ -90,7 +94,8 @@ A=M
 M=D
 `
 
-const pushConstantCommands = `%s
+const pushConstantCommands = `// Push constant command
+%s
 D=A
 @SP
 A=M
@@ -99,7 +104,8 @@ M=D
 M=M+1
 `
 
-const pushPointerCommands = `%s
+const pushPointerCommands = `// Push pointer command
+%s
 D=M
 @SP
 A=M
@@ -108,7 +114,8 @@ M=D
 M=M+1
 `
 
-const popPointerCommands = `@SP
+const popPointerCommands = `// Pop pointer command
+@SP
 M=M-1
 A=M
 D=M
@@ -116,7 +123,8 @@ D=M
 M=D
 `
 
-const pushTempCommands = `@5
+const pushTempCommands = `// Push temp command
+@5
 D=A
 %s
 A=D+A
@@ -128,7 +136,8 @@ M=D
 M=M+1
 `
 
-const popTempCommands = `@5
+const popTempCommands = `// Pop temp command
+@5
 D=A
 %s
 D=D+A
@@ -143,7 +152,8 @@ A=M
 M=D
 `
 
-const pushStaticCommands = `%s
+const pushStaticCommands = `// Push static command
+%s
 D=M
 @SP
 A=M
@@ -152,7 +162,8 @@ M=D
 M=M+1
 `
 
-const popStaticCommands = `@SP
+const popStaticCommands = `// Pop static command
+@SP
 M=M-1
 A=M
 D=M
@@ -163,6 +174,20 @@ M=D
 const endCommands = `@END
 (END)
 0;JMP
+`
+
+const gotoCommands = `// Goto command
+@%s
+0;JMP
+`
+
+const ifCommands = `// If-goto command
+@SP
+M=M-1
+A=M
+D=M
+@%s
+D;JNE
 `
 
 
@@ -252,6 +277,24 @@ func (w *Writer) WritePushPop(commandType string, segment string, index int) err
 		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid command type: %s", commandType)
 		return errors.New(errorMessage)
 	}
+}
+
+
+func (w *Writer) WriteIf(label string) error {
+	_, err := fmt.Fprintf(w.file, ifCommands, label)
+	return err
+}
+
+
+func (w *Writer) WriteGoto(label string) error {
+	_, err := fmt.Fprintf(w.file, gotoCommands, label)
+	return err
+}
+
+
+func (w *Writer) WriteLabel(label string) error {
+	_, err := fmt.Fprintln(w.file, label)
+	return err
 }
 
 

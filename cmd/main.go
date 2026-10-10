@@ -65,6 +65,28 @@ func translate(fileName string) error {
 			if err != nil {
 				return err
 			}
+		case "C_LABEL":
+			filePath := strings.Split(fileNameWithoutExtension, "/")
+			fileName := filePath[len(filePath) - 1]
+			labelName, err := p.Arg1()
+			if err != nil {
+				return err
+			}
+			labelCommand := fmt.Sprintf("(%s.%s$%s)", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], labelName)
+			err = w.WriteLabel(labelCommand)
+		case "C_GOTO", "C_IF":
+			filePath := strings.Split(fileNameWithoutExtension, "/")
+			fileName := filePath[len(filePath) - 1]
+			labelName, err := p.Arg1()
+			if err != nil {
+				return err
+			}
+			branchCommand := fmt.Sprintf("%s.%s$%s", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], labelName)
+			if commandType == "C_GOTO" {
+				err = w.WriteGoto(branchCommand)
+			} else {
+				err = w.WriteIf(branchCommand)
+			}
 		}
 	}
 
