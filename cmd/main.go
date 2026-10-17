@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"unicode"
+
 	"github.com/YourLocalCafe/vm-translator/parser"
 	"github.com/YourLocalCafe/vm-translator/writer"
 )
@@ -23,6 +24,8 @@ func translate(fileName string) error {
 		return err
 	}
 	defer w.Close()
+	filePath := strings.Split(fileNameWithoutExtension, "/")
+	w.SetFileName(filePath[len(filePath) - 1])
 
 	for {
 		hasNext, err := p.Advance()
@@ -54,9 +57,6 @@ func translate(fileName string) error {
 			}
 		}
 
-		filePath := strings.Split(fileNameWithoutExtension, "/")
-		fileName := filePath[len(filePath) - 1]
-
 		switch commandType {
 		case "C_ARITHMETIC":
 			err = w.WriteArithmetic(p.CurrentInstruction)
@@ -69,19 +69,19 @@ func translate(fileName string) error {
 				return err
 			}
 		case "C_LABEL":
-			labelCommand := fmt.Sprintf("(%s.%s$%s)", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
+			labelCommand := fmt.Sprintf("%s$%s", p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
 			err = w.WriteLabel(labelCommand)
 		case "C_GOTO", "C_IF":
-			branchCommand := fmt.Sprintf("%s.%s$%s", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
+			branchCommand := fmt.Sprintf("%s$%s", p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
 			if commandType == "C_GOTO" {
 				err = w.WriteGoto(branchCommand)
 			} else {
 				err = w.WriteIf(branchCommand)
 			}
 		case "C_FUNCTION":
-			err = w.WriteFunction(fmt.Sprintf("(%s.%s)", fileName, arg1), arg2)
+			err = w.WriteFunction(arg1, arg2)
 		case "C_CALL":
-			err = w.WriteCall(fmt.Sprintf("%s.%s", fileName, arg1), arg2)
+			err = w.WriteCall(arg1, arg2)
 		case "C_RETURN":
 			err = w.WriteReturn()
 		}

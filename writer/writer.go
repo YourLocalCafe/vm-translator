@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strings"
 )
 
 
 type Writer struct {
 	file *os.File
+	inputFileName string
 	equalCounter int
 	gtCounter int
 	ltCounter int
@@ -179,7 +179,7 @@ const endCommands = `@END
 `
 
 const gotoCommands = `// Goto command
-@%s
+@%s.%s
 0;JMP
 `
 
@@ -188,13 +188,13 @@ const ifCommands = `// If-goto command
 M=M-1
 A=M
 D=M
-@%s
+@%s.%s
 D;JNE
 `
 
 const functionCommands = `// Function command
 %s
-%s
+@%d
 D=A
 @R13
 M=D
@@ -335,6 +335,11 @@ func NewWriter(filename string) (*Writer, error) {
 }
 
 
+func (w *Writer) SetFileName(fileName string) {
+	w.inputFileName = fileName
+}
+
+
 func (w *Writer) WriteArithmetic(command string) error {
 	switch command {
 	case "add":
@@ -420,57 +425,46 @@ func (w *Writer) WriteReturn() error {
 
 
 func (w *Writer) WriteCall(functionName string, nArgs int) error {
-	_, err := fmt.Fprintf(w.file, callCommands, functionName, w.callCounter, nArgs, functionName, functionName, w.callCounter)
+	functionLabel := fmt.Sprintf("%s.%s", w.inputFileName, functionName)
+	_, err := fmt.Fprintf(w.file, callCommands, functionLabel, w.callCounter, nArgs, functionLabel, functionLabel, w.callCounter)
 	w.callCounter++
 	return err
 }
 
 
 func (w *Writer) WriteFunction(functionName string, nVars int) error {
-	_, err := fmt.Fprintf(w.file, functionCommands, functionName, fmt.Sprintf("@%d", nVars), w.functionCounter, w.functionCounter, w.functionCounter, w.functionCounter)
+	_, err := fmt.Fprintf(w.file, functionCommands, fmt.Sprintf("(%s.%s)", w.inputFileName, functionName), nVars, w.functionCounter, w.functionCounter, w.functionCounter, w.functionCounter)
 	w.functionCounter++
 	return err
 }
 
 
 func (w *Writer) WriteIf(label string) error {
-	_, err := fmt.Fprintf(w.file, ifCommands, label)
+	_, err := fmt.Fprintf(w.file, ifCommands, w.inputFileName, label)
 	return err
 }
 
 
 func (w *Writer) WriteGoto(label string) error {
-	_, err := fmt.Fprintf(w.file, gotoCommands, label)
+	_, err := fmt.Fprintf(w.file, gotoCommands, w.inputFileName, label)
 	return err
 }
 
 
 func (w *Writer) WriteLabel(label string) error {
-	_, err := fmt.Fprintln(w.file, label)
+	_, err := fmt.Fprintln(w.file, fmt.Sprintf("(%s.%s)", w.inputFileName, label))
 	return err
 }
 
 
 func (w *Writer) writePopStatic(index int) error {
-	filePath := strings.Split(w.file.Name(), "/")
-	fileName, _, foundExtension := strings.Cut(filePath[len(filePath) - 1], ".")
-	if !foundExtension {
-		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid filename passed: %s", w.file.Name())
-		return errors.New(errorMessage)
-	}
-	_, err := fmt.Fprintf(w.file, popStaticCommands, fmt.Sprintf("@%s.%d", fileName, index))
+	_, err := fmt.Fprintf(w.file, popStaticCommands, fmt.Sprintf("@%s.%d", w.inputFileName, index))
 	return err
 }
 
 
 func (w *Writer) writePushStatic(index int) error {
-	filePath := strings.Split(w.file.Name(), "/")
-	fileName, _, foundExtension := strings.Cut(filePath[len(filePath) - 1], ".")
-	if !foundExtension {
-		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid filename passed: %s", w.file.Name())
-		return errors.New(errorMessage)
-	}
-	_, err := fmt.Fprintf(w.file, pushStaticCommands, fmt.Sprintf("@%s.%d", fileName, index))
+	_, err := fmt.Fprintf(w.file, pushStaticCommands, fmt.Sprintf("@%s.%d", w.inputFileName, index))
 	return err
 }
 
