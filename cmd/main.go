@@ -54,6 +54,9 @@ func translate(fileName string) error {
 			}
 		}
 
+		filePath := strings.Split(fileNameWithoutExtension, "/")
+		fileName := filePath[len(filePath) - 1]
+
 		switch commandType {
 		case "C_ARITHMETIC":
 			err = w.WriteArithmetic(p.CurrentInstruction)
@@ -66,31 +69,25 @@ func translate(fileName string) error {
 				return err
 			}
 		case "C_LABEL":
-			filePath := strings.Split(fileNameWithoutExtension, "/")
-			fileName := filePath[len(filePath) - 1]
-			labelName, err := p.Arg1()
-			if err != nil {
-				return err
-			}
-			labelCommand := fmt.Sprintf("(%s.%s$%s)", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], labelName)
+			labelCommand := fmt.Sprintf("(%s.%s$%s)", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
 			err = w.WriteLabel(labelCommand)
 		case "C_GOTO", "C_IF":
-			filePath := strings.Split(fileNameWithoutExtension, "/")
-			fileName := filePath[len(filePath) - 1]
-			labelName, err := p.Arg1()
-			if err != nil {
-				return err
-			}
-			branchCommand := fmt.Sprintf("%s.%s$%s", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], labelName)
+			branchCommand := fmt.Sprintf("%s.%s$%s", fileName, p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
 			if commandType == "C_GOTO" {
 				err = w.WriteGoto(branchCommand)
 			} else {
 				err = w.WriteIf(branchCommand)
 			}
+		case "C_FUNCTION":
+			err = w.WriteFunction(fmt.Sprintf("(%s.%s)", fileName, arg1), arg2)
+		case "C_CALL":
+			err = w.WriteCall(fmt.Sprintf("%s.%s", fileName, arg1), arg2)
+		case "C_RETURN":
+			err = w.WriteReturn()
 		}
 	}
 
-	return nil
+	return err
 }
 
 

@@ -46,11 +46,21 @@ func NewParser(filename string) (*Parser, error) {
 			if _, exists := labelMapping[commandParts[1]]; !exists {
 				labelMapping[commandParts[1]] = map[string]struct{}{}
 			}
-			labelMapping[commandParts[1]][functionName[len(functionName) - 1]] = struct{}{}
+			if len(functionName) > 0 {
+				labelMapping[commandParts[1]][functionName[len(functionName) - 1]] = struct{}{}
+			} else {
+				errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid use of \"label\", function call stack: %s", functionName)
+				return nil, errors.New(errorMessage)
+			}
 		case "function":
 			functionName = append(functionName, commandParts[1])
 		case "return":
-			functionName = functionName[:len(functionName) - 1]
+			if len(functionName) > 0 {
+				functionName = functionName[:len(functionName) - 1]
+			} else {
+				errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid use of return outside function, function call stack: %s", functionName)
+				return nil, errors.New(errorMessage)
+			}
 		}
 	}
 	_, err = f.Seek(0, io.SeekStart)

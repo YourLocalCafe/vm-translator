@@ -14,6 +14,8 @@ type Writer struct {
 	gtCounter int
 	ltCounter int
 	skipCounter int
+	functionCounter int
+	callCounter int
 }
 
 
@@ -190,6 +192,137 @@ D=M
 D;JNE
 `
 
+const functionCommands = `// Function command
+%s
+%s
+D=A
+@R13
+M=D
+@SKIP_LOCAL_LOOP%d
+D;JEQ
+(LOCAL_LOOP%d)
+@SP
+A=M
+M=0
+@SP
+M=M+1
+@R13
+M=M-1
+D=M
+@LOCAL_LOOP%d
+D;JGT
+(SKIP_LOCAL_LOOP%d)
+`
+
+const callCommands = `// Call command
+@%s$ret.%d
+D=A
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@LCL
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@ARG
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@THIS
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+@THAT
+D=M
+@SP
+A=M
+M=D
+@SP
+M=M+1
+D=M
+@5
+D=D-A
+@%d
+D=D-A
+@ARG
+M=D
+@SP
+D=M
+@LCL
+M=D
+@%s
+0;JMP
+(%s$ret.%d)
+`
+
+const returnCommands = `// Return command
+@LCL
+D=M
+@R13
+M=D
+@5
+D=D-A
+A=D
+D=M
+@R14
+M=D
+@SP
+M=M-1
+A=M
+D=M
+@ARG
+A=M
+M=D
+@ARG
+D=M+1
+@SP
+M=D
+@R13
+D=M-1
+A=D
+D=M
+@THAT
+M=D
+@R13
+D=M
+@2
+D=D-A
+A=D
+D=M
+@THIS
+M=D
+@R13
+D=M
+@3
+D=D-A
+A=D
+D=M
+@ARG
+M=D
+@R13
+D=M
+@4
+D=D-A
+A=D
+D=M
+@LCL
+M=D
+@R14
+A=M
+0;JMP
+`
+
 
 func NewWriter(filename string) (*Writer, error) {
 	f, err := os.Create(filename)
@@ -277,6 +410,26 @@ func (w *Writer) WritePushPop(commandType string, segment string, index int) err
 		errorMessage := fmt.Sprintf("An error occurred during code generation - Invalid command type: %s", commandType)
 		return errors.New(errorMessage)
 	}
+}
+
+
+func (w *Writer) WriteReturn() error {
+	_, err := fmt.Fprintf(w.file, returnCommands)
+	return err
+}
+
+
+func (w *Writer) WriteCall(functionName string, nArgs int) error {
+	_, err := fmt.Fprintf(w.file, callCommands, functionName, w.callCounter, nArgs, functionName, functionName, w.callCounter)
+	w.callCounter++
+	return err
+}
+
+
+func (w *Writer) WriteFunction(functionName string, nVars int) error {
+	_, err := fmt.Fprintf(w.file, functionCommands, functionName, fmt.Sprintf("@%d", nVars), w.functionCounter, w.functionCounter, w.functionCounter, w.functionCounter)
+	w.functionCounter++
+	return err
 }
 
 
