@@ -19,6 +19,15 @@ type Writer struct {
 }
 
 
+const initCommands = `// Initialization commands
+@256
+D=A
+@SP
+M=D
+@Sys.Sys.init
+0;JMP
+`
+
 const binaryCommands = `// Binary command
 @SP
 M=M-1
@@ -326,6 +335,10 @@ A=M
 
 func NewWriter(filename string) (*Writer, error) {
 	f, err := os.Create(filename)
+	if err != nil {
+		return nil, err
+	}
+	_, err = fmt.Fprint(f,initCommands)
 	if err != nil {
 		return nil, err
 	}
