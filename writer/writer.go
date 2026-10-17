@@ -465,7 +465,8 @@ func (w *Writer) WriteGoto(label string) error {
 
 
 func (w *Writer) WriteLabel(label string) error {
-	_, err := fmt.Fprintln(w.file, fmt.Sprintf("(%s.%s)", w.inputFileName, label))
+	labelCommand := fmt.Sprintf("(%s.%s)", w.inputFileName, label)
+	_, err := fmt.Fprintln(w.file, labelCommand)
 	return err
 }
 
