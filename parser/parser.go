@@ -16,7 +16,7 @@ type Parser struct {
 	scanner *bufio.Reader
 	CurrentInstruction string
 	LabelMap map[string]map[string]struct{}
-	CurrentFunction []string
+	CurrentFunction string
 }
 
 
@@ -26,7 +26,7 @@ func NewParser(filename string) (*Parser, error) {
 		return nil, err
 	}
 	sc := bufio.NewReader(f)
-	functionName := []string{"dummyFunctionWrapper"}
+	functionName := "dummyFunctionWrapper"
 	labelMapping := map[string]map[string]struct{}{}
 	for {
 		rawLine, err := sc.ReadString('\n')
@@ -46,21 +46,9 @@ func NewParser(filename string) (*Parser, error) {
 			if _, exists := labelMapping[commandParts[1]]; !exists {
 				labelMapping[commandParts[1]] = map[string]struct{}{}
 			}
-			if len(functionName) > 0 {
-				labelMapping[commandParts[1]][functionName[len(functionName) - 1]] = struct{}{}
-			} else {
-				errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid use of \"label\", function call stack: %s", functionName)
-				return nil, errors.New(errorMessage)
-			}
+			labelMapping[commandParts[1]][functionName] = struct{}{}
 		case "function":
-			functionName = append(functionName, commandParts[1])
-		case "return":
-			if len(functionName) > 0 {
-				functionName = functionName[:len(functionName) - 1]
-			} else {
-				errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid use of return outside function, function call stack: %s", functionName)
-				return nil, errors.New(errorMessage)
-			}
+			functionName = commandParts[1]
 		}
 	}
 	_, err = f.Seek(0, io.SeekStart)
@@ -72,7 +60,7 @@ func NewParser(filename string) (*Parser, error) {
 		scanner: sc,
 		CurrentInstruction: "",
 		LabelMap: labelMapping,
-		CurrentFunction: []string{"dummyFunctionWrapper"},
+		CurrentFunction: "dummyFunctionWrapper",
 	}, nil
 }
 
@@ -118,7 +106,7 @@ func (p *Parser) CommandType() (string, error) {
 		}
 		found := false
 		for i := range p.LabelMap[labelName] {
-			if p.CurrentFunction[len(p.CurrentFunction) - 1] == i {
+			if p.CurrentFunction == i {
 				found = true
 				break
 			}
@@ -137,7 +125,7 @@ func (p *Parser) CommandType() (string, error) {
 		}
 		found := false
 		for i := range p.LabelMap[labelName] {
-			if p.CurrentFunction[len(p.CurrentFunction) - 1] == i {
+			if p.CurrentFunction == i {
 				found = true
 				break
 			}
@@ -149,17 +137,11 @@ func (p *Parser) CommandType() (string, error) {
 		return "C_IF", err
 	case "function":
 		functionName, err := p.Arg1()
-		p.CurrentFunction = append(p.CurrentFunction, functionName)
+		p.CurrentFunction = functionName
 		return "C_FUNCTION", err
 	case "call":
 		return "C_CALL", nil
 	case "return":
-		if len(p.CurrentFunction) > 0 {
-			p.CurrentFunction = p.CurrentFunction[:len(p.CurrentFunction) - 1]
-		} else {
-			errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid use of return outside function, function call stack: %s", p.CurrentFunction)
-			return "", errors.New(errorMessage)
-		}
 		return "C_RETURN", nil
 	default:
 		errorMessage := fmt.Sprintf("An error occurred during parsing - Invalid command type with prefix: %s", commandPrefix)

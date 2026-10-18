@@ -20,11 +20,11 @@ type Writer struct {
 
 
 const initCommands = `// Initialization commands
-@256
+@261
 D=A
 @SP
 M=D
-@Sys.Sys.init
+@Sys.init
 0;JMP
 `
 
@@ -188,7 +188,7 @@ const endCommands = `@END
 `
 
 const gotoCommands = `// Goto command
-@%s.%s
+@%s
 0;JMP
 `
 
@@ -197,7 +197,7 @@ const ifCommands = `// If-goto command
 M=M-1
 A=M
 D=M
-@%s.%s
+@%s
 D;JNE
 `
 
@@ -338,7 +338,7 @@ func NewWriter(filename string) (*Writer, error) {
 	if err != nil {
 		return nil, err
 	}
-	_, err = fmt.Fprint(f,initCommands)
+	_, err = fmt.Fprint(f, initCommands)
 	if err != nil {
 		return nil, err
 	}
@@ -438,34 +438,33 @@ func (w *Writer) WriteReturn() error {
 
 
 func (w *Writer) WriteCall(functionName string, nArgs int) error {
-	functionLabel := fmt.Sprintf("%s.%s", w.inputFileName, functionName)
-	_, err := fmt.Fprintf(w.file, callCommands, functionLabel, w.callCounter, nArgs, functionLabel, functionLabel, w.callCounter)
+	_, err := fmt.Fprintf(w.file, callCommands, functionName, w.callCounter, nArgs, functionName, functionName, w.callCounter)
 	w.callCounter++
 	return err
 }
 
 
 func (w *Writer) WriteFunction(functionName string, nVars int) error {
-	_, err := fmt.Fprintf(w.file, functionCommands, fmt.Sprintf("(%s.%s)", w.inputFileName, functionName), nVars, w.functionCounter, w.functionCounter, w.functionCounter, w.functionCounter)
+	_, err := fmt.Fprintf(w.file, functionCommands, fmt.Sprintf("(%s)", functionName), nVars, w.functionCounter, w.functionCounter, w.functionCounter, w.functionCounter)
 	w.functionCounter++
 	return err
 }
 
 
 func (w *Writer) WriteIf(label string) error {
-	_, err := fmt.Fprintf(w.file, ifCommands, w.inputFileName, label)
+	_, err := fmt.Fprintf(w.file, ifCommands, label)
 	return err
 }
 
 
 func (w *Writer) WriteGoto(label string) error {
-	_, err := fmt.Fprintf(w.file, gotoCommands, w.inputFileName, label)
+	_, err := fmt.Fprintf(w.file, gotoCommands, label)
 	return err
 }
 
 
 func (w *Writer) WriteLabel(label string) error {
-	labelCommand := fmt.Sprintf("(%s.%s)", w.inputFileName, label)
+	labelCommand := fmt.Sprintf("(%s)", label)
 	_, err := fmt.Fprintln(w.file, labelCommand)
 	return err
 }

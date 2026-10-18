@@ -11,7 +11,7 @@ import (
 )
 
 
-func translate(fileName string) error {
+func translate(fileName string, w *writer.Writer) error {
 	p, err := parser.NewParser(fileName)
 	if err != nil {
 		return err
@@ -19,11 +19,6 @@ func translate(fileName string) error {
 	defer p.Cleanup()
 
 	fileNameWithoutExtension, _ := strings.CutSuffix(fileName, ".vm")
-	w, err := writer.NewWriter(fileNameWithoutExtension + ".asm")
-	if err != nil {
-		return err
-	}
-	defer w.Close()
 	filePath := strings.Split(fileNameWithoutExtension, "/")
 	w.SetFileName(filePath[len(filePath) - 1])
 
@@ -69,10 +64,10 @@ func translate(fileName string) error {
 				return err
 			}
 		case "C_LABEL":
-			labelCommand := fmt.Sprintf("%s$%s", p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
+			labelCommand := fmt.Sprintf("%s$%s", p.CurrentFunction, arg1)
 			err = w.WriteLabel(labelCommand)
 		case "C_GOTO", "C_IF":
-			branchCommand := fmt.Sprintf("%s$%s", p.CurrentFunction[len(p.CurrentFunction) - 1], arg1)
+			branchCommand := fmt.Sprintf("%s$%s", p.CurrentFunction, arg1)
 			if commandType == "C_GOTO" {
 				err = w.WriteGoto(branchCommand)
 			} else {
@@ -97,16 +92,55 @@ func main() {
 		fmt.Println("Usage: ./vm-translator <Filename>.vm")
 		os.Exit(1)
 	}
-	fileName := args[1]
-	filePath := strings.Split(fileName, "/")
-	if !unicode.IsUpper(rune(filePath[len(filePath) - 1][0])) || !strings.HasSuffix(fileName, ".vm") {
-		fmt.Println("Invalid filename - should be of the format: Filename.vm")
-		os.Exit(1)
-	}
-
-	err := translate(fileName)
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+	inputPath := args[1]
+	filePath := strings.Split(inputPath, "/")
+	isFile := strings.Contains(filePath[len(filePath) - 1], ".")
+	var err error
+	var w *writer.Writer
+	if isFile {
+		if !unicode.IsUpper(rune(filePath[len(filePath) - 1][0])) || !strings.HasSuffix(inputPath, ".vm") {
+			fmt.Println("Invalid filename - should be of the format: Filename.vm")
+			os.Exit(1)
+		}
+		inputPathWithoutExtension, _ := strings.CutSuffix(inputPath, ".vm")
+		w, err = writer.NewWriter(inputPathWithoutExtension + ".asm")
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer w.Close()
+		err = translate(inputPath, w)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+	} else {
+		filePath = filePath[:len(filePath) - 1]
+		w, err = writer.NewWriter(fmt.Sprintf("%s/%s.asm", inputPath, filePath[len(filePath) - 1]))
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		defer w.Close()
+		folder, err := os.Open(inputPath)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		fileNames, err := folder.Readdirnames(0)
+		if err != nil {
+			fmt.Println(err)
+			os.Exit(1)
+		}
+		for _, fileName := range fileNames {
+			if !unicode.IsUpper(rune(fileName[0])) || !strings.HasSuffix(fileName, ".vm") {
+				continue
+			}
+			err = translate(inputPath + fileName, w)
+			if err != nil {
+				fmt.Println(err)
+				os.Exit(1)
+			}
+		}
 	}
 }
